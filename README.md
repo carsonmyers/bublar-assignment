@@ -1,5 +1,4 @@
 # Bublar Technical Assignment
-Carson Myers
 
 ## Overview
 
@@ -20,18 +19,27 @@ Finally, there is a simple client program which is a scaffold for an actual game
 
 All the services can be started through `docker-compose`:
 
+```bash
    > docker-compose up -d
+   > docker-compose ps
+```
+
+Some services may fail on first run due to dependencies taking a moment to become available
 
 It's useful to monitor the services through logging:
 
+```bash
    > docker-compose logs -f api api_admin locations players
+```
 
 There is no pre-initialized data, so the client program can be used to create some locations and players:
 
+```bash
    > docker-compose run client locations create -n level1
    > docker-compose run client locations create -n coolzone -x 1
    > docker-compose run client players create -u test1
    > docker-compose run client players create -u test2
+```
 
 The client program is made up of a command-tree accompanied by help messages for each command and their arguments. The help menu appears if you add `-h` after a command, `help` before or after a command, or by omitting a following command (e.g., `client locations help list`, `client locations list help`, and `client locations list -h` will print the `list` command's help. `client locations`, `client help locations`, etc. will print the `locations` command's help).
 
@@ -41,36 +49,48 @@ The `players create` command will prompt for a password if one isn't provided on
 
 The client program setup in docker-compose is communicating with the `api_admin` service. To use the client in a non-administrative role, just build and use it outside of the docker networks:
 
+```bash
    > go build -o ./client ./cmd/client
+```
 
 Alternatively, the `client` service can be copied or modified in `docker-compose.yml` such that it uses the `public` network and the `API_HOST=api` environment variable, and restarted.
 
 Many functions don't require authorization:
 
+```bash
    > ./client players list
    > ./client locations list
+```
 
 However, to interact with the game, login is required:
 
+```bash
    > ./client login -u test1
    > ./client logout
+```
 
 The user session will be persisted in ~/.client-session. Logging out will delete it.
 
 A player can travel to a location, and then move within that location
 
+```bash
    > ./client players travel -l level1
    > ./client players move -x 1 -y 2
+```
 
 The admin can move players around as well:
 
+```bash
    > docker-compose run client players travel -u test2 -l coolzone
    > docker-compose run client players move -u test2 -x 11 -y 22
+```
 
 Now that the players are in rooms, that will become visible to everyone:
 
+```bash
    > ./client players list
    > ./client locations list players -n coolzone
+```
 
 ## Communication
 
