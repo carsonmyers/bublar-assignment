@@ -1,0 +1,122 @@
+version: '3.5'
+services:
+  api:
+    build:
+      context: ./
+      dockerfile: ./cmd/Dockerfile.api
+      target: dev
+    ports:
+      - 62880:62880
+    networks:
+      - public
+    depends_on:
+      - locations
+      - players
+    environment:
+      - LOG_LEVEL=debug
+      - API_HOST=0.0.0.0
+      - API_PORT=62880
+      - API_PROTOCOL=http
+      - API_ENABLEADMIN=false
+      - LOCATIONS_HOST=locations
+      - LOCATIONS_PORT=49800
+      - PLAYERS_HOST=players
+      - PLAYERS_PORT=49801
+  api_admin:
+    build:
+      context: ./
+      dockerfile: ./cmd/Dockerfile.api
+      target: dev
+    networks:
+      - private
+    depends_on:
+      - locations
+      - players
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=62880
+      - API_PROTOCOL=http
+      - API_ENABLEADMIN=true
+      - API_NAME=Admin
+      - LOCATIONS_HOST=locations
+      - LOCATIONS_PORT=49800
+      - PLAYERS_HOST=players
+      - PLAYERS_PORT=49801
+  client:
+    build:
+      context: ./
+      dockerfile: ./cmd/Dockerfile.client
+      target: dev
+    networks:
+      - private
+    environment:
+      - API_HOST=api_admin
+      - API_PORT=62880
+      - API_PROTOCOL=http
+  locations:
+    build:
+      context: ./
+      dockerfile: ./cmd/Dockerfile.locations
+      target: dev
+    networks:
+      - public
+      - private
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - LOCATIONS_HOST=0.0.0.0
+      - LOCATIONS_PORT=49800
+      - LOCATIONS_PROTOCOL=tcp
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USERNAME=bublar
+      - POSTGRES_PASSWORD=bublar
+      - POSTGRES_DATABASE=bublar
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+  players:
+    build:
+      context: ./
+      dockerfile: ./cmd/Dockerfile.players
+      target: dev
+    networks:
+      - public
+      - private
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - PLAYERS_HOST=0.0.0.0
+      - PLAYERS_PORT=49801
+      - PLAYERS_PROTOCOL=tcp
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USERNAME=bublar
+      - POSTGRES_PASSWORD=bublar
+      - POSTGRES_DATABASE=bublar
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: bublar
+    networks:
+      - public
+      - private
+    environment:
+      - POSTGRES_USER=bublar
+      - POSTGRES_PASSWORD=bublar
+  redis:
+    image: redis
+    restart: always
+    networks:
+      - public
+      - private
+
+networks:
+  public:
+    driver: bridge
+  private:
+    driver: bridge

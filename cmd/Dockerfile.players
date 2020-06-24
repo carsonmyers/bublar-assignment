@@ -1,0 +1,50 @@
+ARG SOURCE=build
+
+#####
+##### Build the players service from source
+FROM golang:latest AS build
+
+ENV GO111MODULE=on
+
+RUN apt-get update && apt-get install protobuf-compiler -y
+RUN go get -u github.com/golang/protobuf/protoc-gen-go
+
+ARG project_path="$(go env GOPATH)/src/github.com/carsonmyers/bublar-assignment"
+RUN mkdir -p ${project_path}
+WORKDIR ${project_path}
+
+COPY go.mod .
+COPY go.sum .
+
+RUN go mod download
+
+COPY . .
+
+RUN protoc --go_out=plugins=grpc:. --go_opt=paths=source_relative proto/*.proto
+RUN CGO_ENABLED=0 go build -ldflags '-extldflags "-static"' -o /players ./cmd/players
+
+#####
+##### Create a dev container with a convenient default environment
+FROM alpine:latest AS dev
+COPY --from=build /players /usr/local/bin/players
+
+RUN apk update && apk add ca-certificates
+
+ENV LOG_LEVEL=info \
+    PLAYERS_HOST=0.0.0.0 PLAYERS_PORT=49801 PLAYERS_PROTOCOL=tcp
+
+EXPOSE 49801
+
+CMD ["players"]
+
+
+#####
+##### Create a barebones prod container
+FROM scratch AS prod
+COPY ./players /players
+COPY ./ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+ENV PLAYERS_PORT=49801
+EXPOSE 49801
+
+CMD ["/players"]

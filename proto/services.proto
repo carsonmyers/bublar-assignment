@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/carsonmyers/bublar_assignment/proto";
+
+service Players {
+    rpc Create(Player) returns (Player) {}
+    rpc Get(Player) returns (Player) {}
+    rpc Auth(Player) returns (AuthResponse) {}
+    rpc List(Empty) returns (stream Player) {}
+    rpc Update(PlayerUpdate) returns (Player) {}
+    rpc Travel(TravelRequest) returns (TravelResponse) {}
+    rpc Move(MoveRequest) returns (Position) {}
+    rpc Delete(Player) returns (Player) {}
+};
+
+service Locations {
+    rpc Create(Location) returns (Location) {}
+    rpc Get(Location) returns (Location) {}
+    rpc List(Empty) returns (stream Location) {}
+    rpc ListPlayers(Location) returns (stream Player) {}
+    rpc Update(LocationUpdate) returns (Location) {}
+    rpc Delete(Location) returns (Location) {}
+}
+
+message Player {
+    string username = 1;
+    string password = 2;
+    string location = 3;
+    int32 x = 4;
+    int32 y = 5;
+}
+
+message PlayerUpdate {
+    string id = 1;
+    Player player = 2;
+}
+
+message Location {
+    string name = 1;
+    int32 x = 2;
+    int32 y = 3;
+}
+
+message LocationUpdate {
+    string id = 1;
+    Location location = 2;
+}
+
+message Position {
+    string location = 1;
+    int32 x = 2;
+    int32 y = 3;
+}
+
+message AuthResponse {
+    string username = 1;
+    string token = 2;
+}
+
+message TravelRequest {
+    string username = 1;
+    string location = 2;
+}
+
+message TravelResponse {
+    Player player = 1;
+    Position position = 2;
+}
+
+message MoveRequest {
+    string username = 1;
+    int32 x = 2;
+    int32 y = 3;
+}
+
+message Empty {
+
+}

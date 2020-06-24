@@ -1,0 +1,39 @@
+ARG SOURCE=build
+
+#####
+##### Build the client from source
+FROM golang:latest AS build
+
+ENV GO111MODULE=on
+
+ARG project_path="$(go env GOPATH)/src/github.com/carsonmyers/bublar-assignment"
+RUN mkdir -p ${project_path}
+WORKDIR ${project_path}
+
+COPY go.mod .
+COPY go.sum .
+
+RUN go mod download
+
+COPY . .
+RUN CGO_ENABLED=0 go build -ldflags '-extldflags "-static"' -o /client ./cmd/client
+
+#####
+##### Create a dev container with a convenient default environment
+FROM alpine:latest AS dev
+COPY --from=build /client /usr/local/bin/client
+
+RUN apk update && apk add ca-certificates
+
+ENV LOG_LEVEL=info \
+    API_HOST=0.0.0.0 API_PORT=62881 API_PROTOCOL=http
+
+ENTRYPOINT ["client"]
+
+#####
+##### Create a barebones prod container
+FROM scratch AS prod
+COPY ./client /client
+COPY ./ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+ENTRYPOINT ["/client"]
